@@ -85,7 +85,14 @@ void FHEContext::load_rot_keys(const string& keys_dir, const string& tag,
     if (boot_slots > 0)
         cc->EvalBootstrapSetup(level_budget_, {0, 0}, boot_slots);
     ifstream rf(keys_dir + "/rot-" + tag + ".bin", ios::binary);
-    cc->DeserializeEvalAutomorphismKey(rf, SerType::BINARY);
+    if (!rf.is_open()) {
+        cerr << "无法打开旋转密钥文件: " << keys_dir + "/rot-" + tag + ".bin" << "\n";
+        exit(1);
+    }
+    if (!cc->DeserializeEvalAutomorphismKey(rf, SerType::BINARY)) {
+        cerr << "旋转密钥反序列化失败: " << tag << "\n";
+        exit(1);
+    }
 }
 
 void FHEContext::clear_rot_keys() { cc->ClearEvalAutomorphismKeys(); }
