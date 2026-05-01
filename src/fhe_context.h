@@ -14,11 +14,14 @@ public:
     void load(const string& keys_dir);
 
     // 生成/加载旋转密钥（按层分组）
-    void gen_rot_keys(const vector<int>& rots, int boot_slots,
-                      const string& keys_dir, const string& tag, bool serialize = false);
-    void load_rot_keys(const string& keys_dir, const string& tag,
-                       int boot_slots);
+    void gen_rot_keys(const vector<int>& rots, const string& keys_dir,
+                      const string& tag, bool serialize = false);
+    void load_rot_keys(const string& keys_dir, const string& tag);
     void clear_rot_keys();
+
+    // 自举密钥独立管理（不随旋转密钥切换丢失）
+    void gen_boot_keys(const string& keys_dir, bool serialize = false);
+    void load_boot_keys(const string& keys_dir);
 
     // 基本同态操作封装
     Ctxt rot(const Ctxt& c, int r) const;

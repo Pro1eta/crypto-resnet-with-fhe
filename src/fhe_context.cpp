@@ -67,23 +67,16 @@ void FHEContext::load(const string& keys_dir) {
         FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
 }
 
-void FHEContext::gen_rot_keys(const vector<int>& rots, int boot_slots,
+void FHEContext::gen_rot_keys(const vector<int>& rots,
                                const string& keys_dir, const string& tag,
                                bool serialize) {
-    if (boot_slots > 0) {
-        cc->EvalBootstrapSetup(level_budget_, {0, 0}, boot_slots);
-        cc->EvalBootstrapKeyGen(kp.secretKey, boot_slots);
-    }
     cc->EvalRotateKeyGen(kp.secretKey, rots);
     if (!serialize) return;
     ofstream rf(keys_dir + "/rot-" + tag + ".bin", ios::binary);
     cc->SerializeEvalAutomorphismKey(rf, SerType::BINARY);
 }
 
-void FHEContext::load_rot_keys(const string& keys_dir, const string& tag,
-                                int boot_slots) {
-    if (boot_slots > 0)
-        cc->EvalBootstrapSetup(level_budget_, {0, 0}, boot_slots);
+void FHEContext::load_rot_keys(const string& keys_dir, const string& tag) {
     ifstream rf(keys_dir + "/rot-" + tag + ".bin", ios::binary);
     if (!rf.is_open()) {
         cerr << "无法打开旋转密钥文件: " << keys_dir + "/rot-" + tag + ".bin" << "\n";
@@ -91,6 +84,31 @@ void FHEContext::load_rot_keys(const string& keys_dir, const string& tag,
     }
     if (!cc->DeserializeEvalAutomorphismKey(rf, SerType::BINARY)) {
         cerr << "旋转密钥反序列化失败: " << tag << "\n";
+        exit(1);
+    }
+}
+
+// 为所有需要的槽数生成自举密钥（32768/16384/8192/4096）
+void FHEContext::gen_boot_keys(const string& keys_dir, bool serialize) {
+    for (int slots : {32768, 16384, 8192, 4096}) {
+        cc->EvalBootstrapSetup(level_budget_, {0, 0}, slots);
+        cc->EvalBootstrapKeyGen(kp.secretKey, slots);
+    }
+    if (!serialize) return;
+    ofstream bf(keys_dir + "/boot-keys.bin", ios::binary);
+    cc->SerializeEvalAutomorphismKey(bf, SerType::BINARY);
+}
+
+void FHEContext::load_boot_keys(const string& keys_dir) {
+    for (int slots : {32768, 16384, 8192, 4096})
+        cc->EvalBootstrapSetup(level_budget_, {0, 0}, slots);
+    ifstream bf(keys_dir + "/boot-keys.bin", ios::binary);
+    if (!bf.is_open()) {
+        cerr << "无法打开自举密钥文件: " << keys_dir + "/boot-keys.bin" << "\n";
+        exit(1);
+    }
+    if (!cc->DeserializeEvalAutomorphismKey(bf, SerType::BINARY)) {
+        cerr << "自举密钥反序列化失败\n";
         exit(1);
     }
 }
@@ -104,14 +122,8 @@ Ctxt FHEContext::rot(const Ctxt& c, int r) const {
 Ctxt FHEContext::add(const Ctxt& a, const Ctxt& b) const { return cc->EvalAdd(a, b); }
 Ctxt FHEContext::mul(const Ctxt& c, const Ptxt& p) const { return cc->EvalMult(c, p); }
 
-// imaginary-removing bootstrapping：论文 Section 5
-// 在 SlotToCoeff 中将系数减半，再计算 v + conj(v)，消除虚部噪声
 Ctxt FHEContext::bootstrap(const Ctxt& c) const {
-    Ctxt b = cc->EvalBootstrap(c);
-    // conj(b) = EvalConjugate，OpenFHE 中通过 EvalAtIndex(-1) 实现共轭
-    // 实际调用：Re(x) = (x + conj(x)) / 2，但 bootstrapping 内部已做 /2
-    // 此处直接返回 bootstrapped 结果（OpenFHE 的 EvalBootstrap 已支持 imaginary removal）
-    return b;
+    return cc->EvalBootstrap(c);
 }
 
 Ptxt FHEContext::encode(const vector<double>& v, int level, int slots) const {

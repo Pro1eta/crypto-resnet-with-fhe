@@ -40,7 +40,11 @@ int main(int argc, char* argv[]) {
         cout << "生成密钥到 " << keys_dir << " ...\n";
         ctx.generate(keys_dir, true);
 
-        // Stage 1/2：C1+C2+C3A，由 compute_rotations 精确计算
+        // 自举密钥（所有槽数：32768/16384/8192/4096）
+        ctx.gen_boot_keys(keys_dir, true);
+        ctx.clear_rot_keys(); ctx.load(keys_dir);
+
+        // Stage 1/2：C1+C2+C3A
         ctx.gen_rot_keys(
             {-16384,-14336,-12288,-10240,-8192,-7200,-7168,-6176,-6144,
              -5152,-5120,-4128,-4096,-3104,-3072,-2080,-2048,-1056,-1024,
@@ -49,10 +53,10 @@ int main(int argc, char* argv[]) {
              9183,9215,9216,10207,10239,10240,11231,11263,11264,
              12255,12287,12288,13279,13311,13312,14303,14335,
              15327,15359,15360,16351,16383,18432,21504},
-            16384, keys_dir, "stage1", true);
+            keys_dir, "stage1", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // Stage 3：C3+C4A，由 compute_rotations 精确计算
+        // Stage 3：C3+C4A
         ctx.gen_rot_keys(
             {-16384,-8192,-7168,-6144,-5120,-4096,
              -3168,-3136,-3104,-3072,-2144,-2112,-2080,-2048,
@@ -69,10 +73,10 @@ int main(int argc, char* argv[]) {
              22429,22461,22493,22495,22525,
              23453,23485,23517,23519,23549,
              24477,24509,24541,24543,24573},
-            8192, keys_dir, "stage3", true);
+            keys_dir, "stage3", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // Stage 4：C4，由 compute_rotations 精确计算
+        // Stage 4：C4
         ctx.gen_rot_keys(
             {-16384,-8192,-4096,-3136,-3072,-2112,-2048,-1088,-1024,
              -132,-128,-124,-64,-4,
@@ -84,38 +88,38 @@ int main(int argc, char* argv[]) {
              17311,17375,18335,18399,19359,19423,20383,20447,
              21406,21470,22430,22494,23454,23518,24478,24542,
              25501,25565,26525,26589,27549,27613,28573,28637},
-            4096, keys_dir, "stage4", true);
+            keys_dir, "stage4", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // DownSamp1：C3A，由 compute_rotations 精确计算
+        // DownSamp1
         ctx.gen_rot_keys(
             {-16384,-8192,-4096,
              1023,2016,3039,3072,4095,5088,6111,6144,
              7167,8160,9183,9216,10239,11232,12255},
-            0, keys_dir, "downsamp1", true);
+            keys_dir, "downsamp1", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // DownSamp2：C4A，由 compute_rotations 精确计算
+        // DownSamp2
         ctx.gen_rot_keys(
             {-16384,-8192,-4096,-2048,
              30,992,1022,1984,2014,2976,3006,3072,3102,
              4064,4094,5056,5086,6048,6078},
-            0, keys_dir, "downsamp2", true);
+            keys_dir, "downsamp2", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // AvgPool：由 compute_rotations 精确计算
+        // AvgPool
         ctx.gen_rot_keys(
             {4,8,16,28,56,84,128,256,512,
              1008,1036,1064,1092,2016,2044,2072,2100,
              3024,3052,3080,3108},
-            0, keys_dir, "avgpool", true);
+            keys_dir, "avgpool", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
         // Head：FC 对角线 1..63
         {
             vector<int> fc_rots;
             for (int d = 1; d < 64; d++) fc_rots.push_back(d);
-            ctx.gen_rot_keys(fc_rots, 0, keys_dir, "head", true);
+            ctx.gen_rot_keys(fc_rots, keys_dir, "head", true);
         }
         ctx.clear_rot_keys();
 
@@ -130,6 +134,7 @@ int main(int argc, char* argv[]) {
         if (argc >= 6) n = atoi(argv[5]);
 
         ctx.load(keys_dir);
+        ctx.load_boot_keys(keys_dir);
 
         auto img = load_cifar_image(image_path);
         if (img.empty()) return 1;
