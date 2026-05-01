@@ -1,10 +1,8 @@
-# FHE-ResNet
+# Crypto-ResNet with FHE
 
 > [English](README.en.md) ｜ [GitHub](https://github.com/Pro1eta/crypto-resnet-with-fhe)
 
 使用 [OpenFHE](https://github.com/openfheorg/openfhe-development) 实现的 ResNet 系列（32、56、110）全同态加密（FHE）推理。
-
-> ⚠️ **项目当前处于初始化阶段，以下为设计文档。** 代码实现正在进行中。
 
 本项目实现了基于复用并行卷积（Multiplexed Parallel Convolutions）的低复杂度深度卷积神经网络加密数据推理，使得基于 FHE 的 ResNet 系列模型图像分类成为可能。
 
@@ -170,66 +168,6 @@ flowchart TD
 | APR 精度 (α)   | 13      |
 | 缩放因子 B     | 40      |
 | 安全等级       | 128-bit |
-
-## 使用方法（计划）
-
-```bash
-# 生成密钥
-./build/fhe-resnet --generate-keys --keys keys
-
-# 加密推理（单张图片）
-./build/fhe-resnet \
-    --model resnet32 \
-    --keys keys \
-    --weights weights \
-    --input inputs/cat.png \
-    --verbose 1
-
-# 查看帮助
-./build/fhe-resnet --help
-```
-
-### 命令行参数（计划）
-
-| 参数 | 说明 |
-|---|---|
-| `--model <名称>` | 模型架构：`resnet32`、`resnet56`、`resnet110` |
-| `--keys <路径>` | 密钥目录 |
-| `--weights <路径>` | 权重目录（默认 `weights/`） |
-| `--input <路径>` | 输入图像（32×32 PNG/JPG/BMP） |
-| `--generate-keys` | 生成并保存密钥 |
-| `--verbose <0/1/2>` | 详细程度：0=静默, 1=正常, 2=调试 |
-| `--help` | 显示帮助 |
-
-## 项目结构（计划）
-
-```
-├── CMakeLists.txt
-├── README.md / README.en.md
-├── inputs/          ← 输入图像
-├── weights/         ← 预训练权重 (.bin 文件)
-├── src/
-│   ├── main.cpp
-│   ├── fhe_context.h/.cpp      CKKS 上下文、密钥管理、编解码
-│   ├── utils.h                 计时、文件 I/O、CIFAR-10 标签
-│   ├── packing.h/.cpp          附录 E/F.2: MultPack / MultParPack
-│   ├── weight_loader.h/.cpp    权重 I/O, ParBNConst, ParMultWgt, 张量选择
-│   ├── layers/
-│   │   ├── mult_par_conv_bn.h/.cpp    算法 7: 融合并行卷积+BN
-│   │   ├── approx_relu.h/.cpp         近似 ReLU ({15,15,27} Chebyshev)
-│   │   ├── bootstrapping.h/.cpp       虚部去除自举（第 5 节）
-│   │   ├── downsample.h/.cpp          算法 5: DOWNSAMP
-│   │   ├── avg_pool.h/.cpp            算法 6: AVGPOOL + 索引重排
-│   │   └── fully_connected.h/.cpp     对角法全连接层
-│   └── architectures/
-│       ├── resnet_base.h/.cpp         基础: 推理流水线、块模板
-│       ├── resnet32.h/.cpp            5 blocks/stage
-│       ├── resnet56.h/.cpp            9 blocks/stage
-│       └── resnet110.h/.cpp          18 blocks/stage
-└── docs/
-    ├── paper.pdf                      原始论文
-    └── paper.txt                      提取的文本（AI 离线参考）
-```
 
 ## 许可证
 
