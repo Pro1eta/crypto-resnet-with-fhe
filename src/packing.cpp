@@ -50,15 +50,10 @@ vector<double> gen_select_tensor(int i, const PackParams& pp, int nt) {
 
 // Algorithm 1：SumSlots(cta; m, p)
 Ctxt sum_slots(const FHEContext& ctx, const Ctxt& c, int m, int gap) {
-    Ctxt b = c;
-    int steps = (int)floor(log2(m));
-    for (int j = 1; j <= steps; j++)
-        b = ctx.add(b, ctx.rot(b, (1 << (j-1)) * gap));
-    Ctxt res = b;
-    for (int j = 0; j < steps; j++) {
-        if ((m >> j) & 1)
-            res = ctx.add(res, ctx.rot(b, (m >> (j+1)) * (1 << (j+1)) * gap));
-    }
+    if (m <= 1) return c;
+    Ctxt res = c;
+    for (int step = 1; step < m; step <<= 1)
+        res = ctx.add(res, ctx.rot(res, step * gap));
     return res;
 }
 

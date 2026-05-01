@@ -24,10 +24,11 @@ void FHEContext::generate(const string& keys_dir, bool serialize) {
     p.SetFirstModSize(51);
     p.SetScalingTechnique(FLEXIBLEAUTO);
 
-    // AppReLU 度数 {15,15,27}，深度 = relu_depth(27)+3 = 5+3 = 8，加 bootstrapping
-    uint32_t levels_before = 8;
+    // ConvBN 消耗 2 层，AppReLU(deg=27) 消耗 5 层，合计 7 层
+    uint32_t levels_before = 7;
+    uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];  // 4+4=8
     circuit_depth = levels_before +
-        FHECKKSRNS::GetBootstrapDepth(8, level_budget_, SPARSE_TERNARY);
+        FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
     p.SetMultiplicativeDepth(circuit_depth);
 
     cc = GenCryptoContext(p);
@@ -60,9 +61,10 @@ void FHEContext::load(const string& keys_dir) {
     ifstream mf(keys_dir + MULT_FILE, ios::binary);
     cc->DeserializeEvalMultKey(mf, SerType::BINARY);
 
-    uint32_t levels_before = 8;
+    uint32_t levels_before = 7;
+    uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];
     circuit_depth = levels_before +
-        FHECKKSRNS::GetBootstrapDepth(8, level_budget_, SPARSE_TERNARY);
+        FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
 }
 
 void FHEContext::gen_rot_keys(const vector<int>& rots, int boot_slots,

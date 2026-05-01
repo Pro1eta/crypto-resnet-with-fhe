@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10)
 project(FHEResNet)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -15,7 +15,7 @@ if(NOT OpenFHE_FOUND)
     message(FATAL_ERROR "PACKAGE OpenFHE NOT FOUND")
 endif()
 
-set(CMAKE_CXX_FLAGS ${OpenFHE_CXX_FLAGS})
+set(CMAKE_CXX_FLAGS "${OpenFHE_CXX_FLAGS} -Wno-uninitialized -Wno-maybe-uninitialized")
 
 include_directories(${OPENMP_INCLUDES})
 include_directories(${OpenFHE_INCLUDE})

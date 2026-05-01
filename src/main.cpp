@@ -40,20 +40,57 @@ int main(int argc, char* argv[]) {
         cout << "生成密钥到 " << keys_dir << " ...\n";
         ctx.generate(keys_dir, true);
 
-        // Stage 1 旋转密钥（32×32, ki=1）
-        ctx.gen_rot_keys({1,-1,32,-32}, 16384, keys_dir, "stage1", true);
+        // Stage 1/2：ki=1, wi=32，ConvBN1/ConvBN2/ConvBN3A(输入侧)
+        ctx.gen_rot_keys(
+            {1,-1,31,-31,32,-32,33,-33,
+             1024,2048,4096,8192,-8192,-16384},
+            16384, keys_dir, "stage1", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // Stage 3 旋转密钥（16×16, ki=2）
-        ctx.gen_rot_keys({1,-1,16,-16,2,4,8}, 8192, keys_dir, "stage3", true);
+        // Stage 3：ki=2, wi=16，ConvBN3/ConvBN4A(输入侧)
+        ctx.gen_rot_keys(
+            {1,2,-2,62,-62,64,-64,66,-66,
+             1024,2048,4096,-4096,-8192,-16384},
+            8192, keys_dir, "stage3", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // Stage 4 旋转密钥（8×8, ki=4）
-        ctx.gen_rot_keys({1,-1,8,-8,2,4}, 4096, keys_dir, "stage4", true);
+        // Stage 4：ki=4, wi=8，ConvBN4
+        ctx.gen_rot_keys(
+            {1,2,4,-4,124,-124,128,-128,132,-132,
+             256,1024,2048,-4096,-8192,-16384},
+            4096, keys_dir, "stage4", true);
         ctx.clear_rot_keys(); ctx.load(keys_dir);
 
-        // Head 旋转密钥（FC 对角线方法）
-        ctx.gen_rot_keys({1,2,4,8,16,32,64}, 0, keys_dir, "head", true);
+        // DownSamp1：PP_CONV3A (ki=1→ko=2)
+        ctx.gen_rot_keys(
+            {1023,2016,3039,3072,4095,5088,6111,6144,
+             7167,8160,9183,9216,10239,11232,12255,
+             -4096,-8192,-16384},
+            0, keys_dir, "downsamp1", true);
+        ctx.clear_rot_keys(); ctx.load(keys_dir);
+
+        // DownSamp2：PP_CONV4A (ki=2→ko=4)
+        ctx.gen_rot_keys(
+            {30,992,1022,1984,2014,2976,3006,3072,3102,
+             4064,4094,5056,5086,6048,6078,
+             -2048,-4096,-8192,-16384},
+            0, keys_dir, "downsamp2", true);
+        ctx.clear_rot_keys(); ctx.load(keys_dir);
+
+        // AvgPool：PP_POOL (ki=4, hi=wi=8)
+        ctx.gen_rot_keys(
+            {4,8,16,28,56,84,128,256,512,
+             1008,1036,1064,1092,2016,2044,2072,2100,
+             3024,3052,3080,3108},
+            0, keys_dir, "avgpool", true);
+        ctx.clear_rot_keys(); ctx.load(keys_dir);
+
+        // Head：FC 对角线方法，需要 1..63 全部旋转量
+        {
+            vector<int> fc_rots;
+            for (int d = 1; d < 64; d++) fc_rots.push_back(d);
+            ctx.gen_rot_keys(fc_rots, 0, keys_dir, "head", true);
+        }
         ctx.clear_rot_keys();
 
         cout << "密钥生成完成。\n";
@@ -72,7 +109,7 @@ int main(int argc, char* argv[]) {
         if (img.empty()) return 1;
 
         // 输入图像打包加密（Stage 1 参数：ki=1, 32×32×3）
-        PackParams pp_in = compute_pack_params(32,32,3, 32,32,16, 1,1, 1);
+        PackParams pp_in = compute_pack_params(32,32,3, 32,32,16, 1,1, 1, ctx.num_slots);
         Ctxt input = mult_par_pack(ctx, img, pp_in, ctx.circuit_depth - 4);
 
         auto t0 = utils::start_time();

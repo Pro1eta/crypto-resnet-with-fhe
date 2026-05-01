@@ -10,6 +10,7 @@ struct PackParams {
     int pi, po;       // 并行副本数
     int q;            // 并行通道组数 q=ceil(co/pi)
     int s;            // 卷积步长
+    int fh = 3, fw = 3; // 卷积核尺寸
 };
 
 // 计算打包参数（论文 Appendix F.2 公式）
