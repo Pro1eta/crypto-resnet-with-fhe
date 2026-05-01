@@ -1,8 +1,10 @@
 # FHE-ResNet
 
-> [中文文档](README.md)
+> [中文文档](README.md) ｜ [GitHub](https://github.com/Pro1eta/crypto-resnet-with-fhe)
 
 Fully Homomorphic Encryption (FHE) inference for ResNet architectures (32, 56, 110) using [OpenFHE](https://github.com/openfheorg/openfhe-development).
+
+> ⚠️ **Project is currently in the initialization phase. The following is design documentation.** Code implementation is in progress.
 
 This project implements low-complexity deep convolutional neural network inference over encrypted data, leveraging multiplexed parallel convolutions to enable practical FHE-based image classification with ResNet-family models.
 
@@ -158,7 +160,7 @@ flowchart TD
 - **Downsamp**: Multiplexed parallel downsampling for stride-2 transitions
 - **AvgPool + FC**: Average pooling with index rearrangement, followed by fully connected layer
 
-## Usage
+## Usage (Planned)
 
 ```bash
 # Generate keys
@@ -176,7 +178,7 @@ flowchart TD
 ./build/fhe-resnet --help
 ```
 
-### Command-line arguments
+### Command-line arguments (Planned)
 
 | Argument | Description |
 |---|---|
@@ -188,7 +190,7 @@ flowchart TD
 | `--verbose <0/1/2>` | Verbosity: 0=quiet, 1=normal, 2=debug |
 | `--help` | Show help |
 
-## Project structure
+## Project structure (Planned)
 
 ```
 ├── CMakeLists.txt
