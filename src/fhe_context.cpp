@@ -79,7 +79,9 @@ void FHEContext::gen_rot_keys(const vector<int>& rots, int boot_slots,
 }
 
 void FHEContext::load_rot_keys(const string& keys_dir, const string& tag, int boot_slots) {
-    if (boot_slots > 0)
+    // 密文始终是 num_slots(32768) 槽，必须为 num_slots 做预计算
+    cc->EvalBootstrapSetup(level_budget_, {0, 0}, num_slots);
+    if (boot_slots > 0 && boot_slots != num_slots)
         cc->EvalBootstrapSetup(level_budget_, {0, 0}, boot_slots);
     ifstream rf(keys_dir + "/rot-" + tag + ".bin", ios::binary);
     if (!rf.is_open()) {
