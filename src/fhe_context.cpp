@@ -97,7 +97,10 @@ void FHEContext::load_rot_keys(const string& keys_dir, const string& tag,
 
 void FHEContext::clear_rot_keys() { cc->ClearEvalAutomorphismKeys(); }
 
-Ctxt FHEContext::rot(const Ctxt& c, int r) const { return cc->EvalRotate(c, r); }
+Ctxt FHEContext::rot(const Ctxt& c, int r) const {
+    if (r == 0) return c;
+    return cc->EvalRotate(c, r);
+}
 Ctxt FHEContext::add(const Ctxt& a, const Ctxt& b) const { return cc->EvalAdd(a, b); }
 Ctxt FHEContext::mul(const Ctxt& c, const Ptxt& p) const { return cc->EvalMult(c, p); }
 
