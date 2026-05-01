@@ -15,7 +15,10 @@ if(NOT OpenFHE_FOUND)
     message(FATAL_ERROR "PACKAGE OpenFHE NOT FOUND")
 endif()
 
-set(CMAKE_CXX_FLAGS "${OpenFHE_CXX_FLAGS} -Wno-uninitialized -Wno-maybe-uninitialized")
+set(CMAKE_CXX_FLAGS "${OpenFHE_CXX_FLAGS} -Wno-uninitialized")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+endif()
 
 include_directories(${OPENMP_INCLUDES})
 include_directories(${OpenFHE_INCLUDE})
