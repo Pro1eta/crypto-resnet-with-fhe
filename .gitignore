@@ -1,0 +1,18 @@
+# Paper
+docs/
+
+# OpenCode local config
+AGENTS.md
+opencode.json
+
+# Build artifacts
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# OS
