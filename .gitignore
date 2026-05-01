@@ -1,9 +1,16 @@
 # Paper
 docs/
 
-# OpenCode local config
+# OpenCode / AI tools local config
 AGENTS.md
+CLAUDE.md
 opencode.json
+tui.json
+node_modules/
+.claude
+.cursor/
+.copilot/
+.windsurf/
 
 # Build artifacts
 build/

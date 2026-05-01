@@ -1,6 +1,6 @@
-# FHE-ResNet
+# Crypto-ResNet with FHE
 
-> [中文文档](README.md)
+> [中文文档](README.md) ｜ [GitHub](https://github.com/Pro1eta/crypto-resnet-with-fhe)
 
 Fully Homomorphic Encryption (FHE) inference for ResNet architectures (32, 56, 110) using [OpenFHE](https://github.com/openfheorg/openfhe-development).
 
@@ -157,66 +157,6 @@ flowchart TD
 - **Boot**: Imaginary-removing bootstrapping (removes accumulated imaginary noise to prevent catastrophic divergence)
 - **Downsamp**: Multiplexed parallel downsampling for stride-2 transitions
 - **AvgPool + FC**: Average pooling with index rearrangement, followed by fully connected layer
-
-## Usage
-
-```bash
-# Generate keys
-./build/fhe-resnet --generate-keys --keys keys
-
-# Encrypted inference (single image)
-./build/fhe-resnet \
-    --model resnet32 \
-    --keys keys \
-    --weights weights \
-    --input inputs/cat.png \
-    --verbose 1
-
-# Help
-./build/fhe-resnet --help
-```
-
-### Command-line arguments
-
-| Argument | Description |
-|---|---|
-| `--model <name>` | Model architecture: `resnet32`, `resnet56`, `resnet110` |
-| `--keys <path>` | Key directory |
-| `--weights <path>` | Weight directory (default `weights/`) |
-| `--input <path>` | Input image (32×32 PNG/JPG/BMP) |
-| `--generate-keys` | Generate and save keys |
-| `--verbose <0/1/2>` | Verbosity: 0=quiet, 1=normal, 2=debug |
-| `--help` | Show help |
-
-## Project structure
-
-```
-├── CMakeLists.txt
-├── README.md / README.en.md
-├── inputs/          ← input images
-├── weights/         ← pre-trained weights (.bin files)
-├── src/
-│   ├── main.cpp
-│   ├── fhe_context.h/.cpp      CKKS context, key mgmt, encode/decode
-│   ├── utils.h                 timing, file I/O, CIFAR-10 labels
-│   ├── packing.h/.cpp          Appendix E/F.2: MultPack / MultParPack
-│   ├── weight_loader.h/.cpp    weight I/O, ParBNConst, ParMultWgt, selecting tensors
-│   ├── layers/
-│   │   ├── mult_par_conv_bn.h/.cpp    Algorithm 7: fused parallel Conv+BN
-│   │   ├── approx_relu.h/.cpp         Approximate ReLU ({15,15,27} Chebyshev)
-│   │   ├── bootstrapping.h/.cpp       Imaginary-removing boot (Section 5)
-│   │   ├── downsample.h/.cpp          Algorithm 5: DOWNSAMP
-│   │   ├── avg_pool.h/.cpp            Algorithm 6: AVGPOOL + index rearrangement
-│   │   └── fully_connected.h/.cpp     Diagonal-method FC layer
-│   └── architectures/
-│       ├── resnet_base.h/.cpp         Base: inference pipeline, block templates
-│       ├── resnet32.h/.cpp            5 blocks/stage
-│       ├── resnet56.h/.cpp            9 blocks/stage
-│       └── resnet110.h/.cpp          18 blocks/stage
-└── docs/
-    ├── paper.pdf                      Original paper
-    └── paper.txt                      Extracted text (AI offline reference)
-```
 
 ## License
 
