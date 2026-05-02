@@ -17,7 +17,7 @@ void FHEContext::generate(const string& keys_dir, bool serialize) {
     p.SetSecretKeyDist(SPARSE_TERNARY);
     p.SetSecurityLevel(HEStd_128_classic);
     p.SetRingDim(1 << 16);
-    p.SetBatchSize(num_slots);
+    p.SetBatchSize(1 << 14);  // 总槽位数固定 16384
     p.SetNumLargeDigits(3);
     p.SetScalingModSize(46);
     p.SetFirstModSize(51);
