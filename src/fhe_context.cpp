@@ -101,7 +101,10 @@ Ctxt FHEContext::rot(const Ctxt& c, int r) const {
 Ctxt FHEContext::add(const Ctxt& a, const Ctxt& b) const { return cc->EvalAdd(a, b); }
 Ctxt FHEContext::mul(const Ctxt& c, const Ptxt& p) const { return cc->EvalMult(c, p); }
 
-Ctxt FHEContext::bootstrap(const Ctxt& c) const { return cc->EvalBootstrap(c); }
+Ctxt FHEContext::bootstrap(const Ctxt& c) const {
+    cerr << "[BOOT] slots=" << c->GetSlots() << "\n";
+    return cc->EvalBootstrap(c);
+}
 
 Ptxt FHEContext::encode(const vector<double>& v, int level, int slots) const {
     if (slots == 0) slots = num_slots;
