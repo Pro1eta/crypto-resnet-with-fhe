@@ -23,7 +23,7 @@ void FHEContext::generate(const string& keys_dir, bool serialize) {
     p.SetFirstModSize(51);
     p.SetScalingTechnique(FLEXIBLEAUTO);
 
-    uint32_t levels_before = 7;
+    uint32_t levels_before = 10;
     uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];
     circuit_depth = levels_before +
         FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
@@ -59,7 +59,7 @@ void FHEContext::load(const string& keys_dir) {
     ifstream mf(keys_dir + MULT_FILE, ios::binary);
     cc->DeserializeEvalMultKey(mf, SerType::BINARY);
 
-    uint32_t levels_before = 7;
+    uint32_t levels_before = 10;
     uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];
     circuit_depth = levels_before +
         FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
