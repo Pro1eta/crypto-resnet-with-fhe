@@ -135,6 +135,7 @@ int main(int argc, char* argv[]) {
         // 输入图像打包加密（Stage 1 参数：ki=1, 32×32×3）
         PackParams pp_in = compute_pack_params(32,32,3, 32,32,16, 1,1, 1, ctx.num_slots);
         Ctxt input = mult_par_pack(ctx, img, pp_in, ctx.circuit_depth - 4);
+        ctx.set_slots(input, 16384);  // RS packing：有效数据 16384 槽
 
         auto t0 = utils::start_time();
         int label = resnet_infer(ctx, input, n, weights_dir, keys_dir);
