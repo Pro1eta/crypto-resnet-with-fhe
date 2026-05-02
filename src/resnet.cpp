@@ -48,7 +48,7 @@ int resnet_infer(FHEContext& ctx, const Ctxt& input,
 
     // ConvBN1 → AppReLU（无 Boot）
     ctx.load_rot_keys(kd, "stage1", 16384);
-    Ctxt x = conv_bn(ctx, input, "conv1", PP_CONV1, wd, ctx.circuit_depth - 4);
+    Ctxt x = conv_bn(ctx, input, "conv1", PP_CONV1, wd, ctx.circuit_depth - 10);
     x = app_relu(ctx, x, 1.0);
     L("post conv1+relu", x);
 
