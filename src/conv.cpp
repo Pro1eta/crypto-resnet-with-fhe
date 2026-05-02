@@ -55,7 +55,8 @@ Ctxt mult_par_conv_bn(const FHEContext& ctx, const Ctxt& in,
                     - (i % ko);
             auto sel = gen_select_tensor(i, pp, nt);
             Ptxt sel_ptxt = ctx.encode(sel, cb->GetLevel());
-            out = ctx.add(out, ctx.mul(ctx.rot(cb, r), sel_ptxt));
+            Ctxt rotated = (r == 0) ? cb : ctx.rot(cb, r);
+            out = ctx.add(out, ctx.mul(rotated, sel_ptxt));
         }
     }
 

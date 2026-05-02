@@ -27,7 +27,7 @@ Ctxt avg_pool(const FHEContext& ctx, const Ctxt& in, const PackParams& pp) {
             for (int j = 0; j < ki && ki*i3+j < nt; j++)
                 sel[ki*i3 + j] = 1.0 / (hi * wi);
             int r = ki*ki*hi*wi*i2 + ki*wi*i1 - ki*i3;
-            Ctxt piece = ctx.mul(ctx.rot(a, r), ctx.encode(sel, a->GetLevel()));
+            Ctxt piece = ctx.mul(r == 0 ? a : ctx.rot(a, r), ctx.encode(sel, a->GetLevel()));
             out = ctx.add(out, piece);
         }
     }

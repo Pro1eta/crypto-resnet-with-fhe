@@ -60,8 +60,11 @@ Ctxt sum_slots(const FHEContext& ctx, const Ctxt& c, int m, int gap) {
     Ctxt res = b[logm];
     // 第二阶段：修正非2的幂次的余量
     for (int j = 0; j < logm; j++) {
-        if ((m >> j) % 2 == 1)
-            res = ctx.add(res, ctx.rot(b[j], ((m >> (j+1)) << (j+1)) * gap));
+        if ((m >> j) % 2 == 1) {
+            int shift = ((m >> (j+1)) << (j+1)) * gap;
+            if (shift != 0)
+                res = ctx.add(res, ctx.rot(b[j], shift));
+        }
     }
     return res;
 }
