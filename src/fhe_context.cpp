@@ -4,6 +4,7 @@
 #include "cryptocontext-ser.h"
 #include "key/key-ser.h"
 #include "scheme/ckksrns/ckksrns-ser.h"
+#include "scheme/ckksrns/ckksrns-fhe.h"
 
 using namespace lbcrypto;
 
@@ -24,9 +25,8 @@ void FHEContext::generate(const string& keys_dir, bool serialize) {
     p.SetScalingTechnique(FLEXIBLEAUTO);
 
     uint32_t levels_before = 10;
-    uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];
     circuit_depth = levels_before +
-        FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
+        FHECKKSRNS::GetBootstrapDepth(level_budget_, SPARSE_TERNARY);
     p.SetMultiplicativeDepth(circuit_depth);
 
     cc = GenCryptoContext(p);
@@ -60,9 +60,8 @@ void FHEContext::load(const string& keys_dir) {
     cc->DeserializeEvalMultKey(mf, SerType::BINARY);
 
     uint32_t levels_before = 10;
-    uint32_t approx_boot_depth = level_budget_[0] + level_budget_[1];
     circuit_depth = levels_before +
-        FHECKKSRNS::GetBootstrapDepth(approx_boot_depth, level_budget_, SPARSE_TERNARY);
+        FHECKKSRNS::GetBootstrapDepth(level_budget_, SPARSE_TERNARY);
 }
 
 void FHEContext::gen_rot_keys(const vector<int>& rots, int boot_slots,
