@@ -96,13 +96,14 @@ void FHEContext::clear_rot_keys() { cc->ClearEvalAutomorphismKeys(); }
 
 Ctxt FHEContext::rot(const Ctxt& c, int r) const {
     if (r == 0) return c;
+    cerr << "[ROT] " << r << "\n";
     return cc->EvalRotate(c, r);
 }
 Ctxt FHEContext::add(const Ctxt& a, const Ctxt& b) const { return cc->EvalAdd(a, b); }
 Ctxt FHEContext::mul(const Ctxt& c, const Ptxt& p) const { return cc->EvalMult(c, p); }
 
 Ctxt FHEContext::bootstrap(const Ctxt& c) const {
-    cerr << "[BOOT] slots=" << c->GetSlots() << "\n";
+    cerr << "[BOOT] slots=" << c->GetSlots() << " level=" << c->GetLevel() << "\n";
     return cc->EvalBootstrap(c);
 }
 
