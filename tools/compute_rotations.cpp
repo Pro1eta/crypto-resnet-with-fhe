@@ -1,6 +1,7 @@
 // 计算 FHE ResNet 推理中每个阶段所需的全部旋转量
-// 编译：g++ -std=c++17 -O2 tools/compute_rotations.cpp -o compute_rotations
-// 运行：./compute_rotations
+// 与 src/ 中的实际算法逻辑完全对齐
+// 编译：g++ -std=c++17 -O2 tools/compute_rotations.cpp -o tools/compute_rotations
+// 运行：./tools/compute_rotations
 
 #include <algorithm>
 #include <cmath>
@@ -12,32 +13,41 @@
 static const int NT = 32768;
 
 struct PP {
-    std::string name;
-    int hi, wi, ci, ho, wo, co, ki, ko, ti, to, pi, po, q, s, fh, fw;
+    int hi, wi, ci, ho, wo, co, ki, ko, ti, to, pi, po, q, s;
+    int fh = 3, fw = 3;
 };
 
-// ---- 精确复现各函数的旋转逻辑 ----
-
-// sum_slots(c, m, gap)：step=1,2,4,...<m，旋转 step*gap
+// 与 packing.cpp sum_slots 完全对齐（Algorithm 1 两阶段）
 static void add_sum_slots(std::set<int>& S, int m, int gap) {
-    for (int step = 1; step < m; step <<= 1)
-        if (step * gap != 0) S.insert(step * gap);
+    if (m <= 1) return;
+    int logm = (int)std::floor(std::log2((double)m));
+    // 第一阶段：倍增
+    for (int j = 1; j <= logm; j++) {
+        int r = (1 << (j-1)) * gap;
+        if (r != 0) S.insert(r);
+    }
+    // 第二阶段：余量修正
+    for (int j = 0; j < logm; j++) {
+        if ((m >> j) % 2 == 1) {
+            int shift = ((m >> (j+1)) << (j+1)) * gap;
+            if (shift != 0) S.insert(shift);
+        }
+    }
 }
 
-// mult_par_conv_bn 的旋转
+// 与 conv.cpp mult_par_conv_bn 完全对齐
 static void add_conv_rots(std::set<int>& S, const PP& p) {
-    int fh = p.fh, fw = p.fw;
-    // 步骤1：预计算旋转
-    for (int i1 = 0; i1 < fh; i1++)
-        for (int i2 = 0; i2 < fw; i2++) {
-            int r = p.ki*p.ki*p.wi*(i1-(fh-1)/2) + p.ki*(i2-(fw-1)/2);
+    // 步骤1：预计算 fh*fw 旋转
+    for (int i1 = 0; i1 < p.fh; i1++)
+        for (int i2 = 0; i2 < p.fw; i2++) {
+            int r = p.ki*p.ki*p.wi*(i1-(p.fh-1)/2) + p.ki*(i2-(p.fw-1)/2);
             if (r != 0) S.insert(r);
         }
-    // 步骤2：sum_slots 三次
+    // 步骤2：SumSlots 三次（gap 与 conv.cpp 对齐）
     add_sum_slots(S, p.ki, 1);
-    add_sum_slots(S, p.ki, p.ki*p.ki*p.wi);
+    add_sum_slots(S, p.ki, p.ki*p.wi);          // 修正：ki*wi，非 ki²*wi
     add_sum_slots(S, p.ti, p.ki*p.ki*p.hi*p.wi);
-    // 步骤3：内循环旋转（选择张量放置）
+    // 步骤3：内循环选择放置旋转
     for (int i3 = 0; i3 < p.q; i3++) {
         int i4_max = std::min(p.pi-1, p.co-1-p.pi*i3);
         for (int i4 = 0; i4 <= i4_max; i4++) {
@@ -49,14 +59,14 @@ static void add_conv_rots(std::set<int>& S, const PP& p) {
             if (r != 0) S.insert(r);
         }
     }
-    // 步骤4：log2(po) 次累加
+    // 步骤4：log2(po) 次并行累加
     for (int j = 0; j < (int)std::log2(p.po); j++) {
         int r = -(1<<j)*(NT/p.po);
         if (r != 0) S.insert(r);
     }
 }
 
-// downsamp 的旋转
+// 与 downsample.cpp downsamp 完全对齐
 static void add_downsamp_rots(std::set<int>& S, const PP& p) {
     for (int i1 = 0; i1 < p.ki; i1++) {
         for (int i2 = 0; i2 < p.ti; i2++) {
@@ -68,23 +78,20 @@ static void add_downsamp_rots(std::set<int>& S, const PP& p) {
             if (r != 0) S.insert(r);
         }
     }
-    // final_rot
-    int fr = -(p.ko*p.ko*p.ho*p.wo*p.to) / 2;
+    // 最终对齐旋转（修正：ti/8，非 to/2）
+    int fr = -(p.ko*p.ko*p.ho*p.wo*p.ti) / 8;
     if (fr != 0) S.insert(fr);
-    // log2(po) 累加
+    // log2(po) 次并行累加
     for (int j = 0; j < (int)std::log2(p.po); j++) {
         int r = -(1<<j)*p.ko*p.ko*p.ho*p.wo*p.to;
         if (r != 0) S.insert(r);
     }
 }
 
-// avg_pool 的旋转
+// 与 avgpool.cpp avg_pool 完全对齐
 static void add_avgpool_rots(std::set<int>& S, const PP& p) {
-    // wi 方向
     for (int j = 0; j < (int)std::log2(p.wi); j++) S.insert((1<<j)*p.ki);
-    // hi 方向
     for (int j = 0; j < (int)std::log2(p.hi); j++) S.insert((1<<j)*p.ki*p.ki*p.wi);
-    // 重排
     for (int i1 = 0; i1 < p.ki; i1++)
         for (int i2 = 0; i2 < p.ti; i2++) {
             int i3 = p.ki*i2 + i1;
@@ -93,64 +100,62 @@ static void add_avgpool_rots(std::set<int>& S, const PP& p) {
         }
 }
 
-// fc_layer 的旋转：对角线 d=1..in_dim-1
-static void add_fc_rots(std::set<int>& S, int in_dim) {
-    for (int d = 1; d < in_dim; d++) S.insert(d);
-}
-
-static void print_set(const std::string& tag, const std::set<int>& S) {
-    std::cout << "\n[" << tag << "] " << S.size() << " 个旋转量:\n  ";
-    for (int v : S) std::cout << v << " ";
-    std::cout << "\n";
+static void print_vec(const std::string& tag, const std::set<int>& S) {
+    std::cout << "// " << tag << " (" << S.size() << " 个)\n{";
+    bool first = true;
+    for (int v : S) { if (!first) std::cout << ","; std::cout << v; first = false; }
+    std::cout << "}\n\n";
 }
 
 int main() {
-    // 论文 Table 6 参数（与 resnet.cpp 一致）
-    PP C1  = {"conv1",      32,32,3,  32,32,16, 1,1, 3,16, 8,2, 2,1,3,3};
-    PP C2  = {"conv2",      32,32,16, 32,32,16, 1,1,16,16, 2,2, 8,1,3,3};
-    PP C3A = {"conv3A",     32,32,16, 16,16,32, 1,2,16, 8, 2,4,16,2,3,3};
-    PP C3  = {"conv3",      16,16,32, 16,16,32, 2,2, 8, 8, 4,4, 8,1,3,3};
-    PP C4A = {"conv4A",     16,16,32,  8, 8,64, 2,4, 8, 4, 4,8,16,2,3,3};
-    PP C4  = {"conv4",       8, 8,64,  8, 8,64, 4,4, 4, 4, 8,8, 8,1,3,3};
-    PP PL  = {"pool",        8, 8,64,  1, 1,64, 4,4, 4, 4, 0,0, 0,1,3,3};
+    // 与 resnet.cpp 中 PackParams 完全一致
+    PP C1  = {32,32, 3, 32,32,16, 1,1, 3,16, 8,2, 2,1};
+    PP C2  = {32,32,16, 32,32,16, 1,1,16,16, 2,2, 8,1};
+    PP C3A = {32,32,16, 16,16,32, 1,2,16, 8, 2,4,16,2};
+    PP C3  = {16,16,32, 16,16,32, 2,2, 8, 8, 4,4, 8,1};
+    PP C4A = {16,16,32,  8, 8,64, 2,4, 8, 4, 4,8,16,2};
+    PP C4  = { 8, 8,64,  8, 8,64, 4,4, 4, 4, 8,8, 8,1};
+    PP PL  = { 8, 8,64,  1, 1,64, 4,4, 4, 4, 0,0, 0,1};
 
-    // stage1：C1, C2, C3A(输入侧 ki=1)
+    // stage1：conv1(C1) + conv2_*a/b(C2) + conv3_1a/conv3_s1(C3A)
     std::set<int> s1;
     add_conv_rots(s1, C1);
     add_conv_rots(s1, C2);
-    add_conv_rots(s1, C3A);  // skip conv 也用 C3A
-    print_set("stage1 (C1+C2+C3A)", s1);
+    add_conv_rots(s1, C3A);
+    print_vec("stage1", s1);
 
-    // stage3：C3, C4A(输入侧 ki=2)
+    // stage3：conv3_1a/conv3_s1(C3A) + conv3_*a/b(C3)
+    // 注意：C3A 的卷积旋转在 stage3 密钥加载期间也会用到
     std::set<int> s3;
+    add_conv_rots(s3, C3A);
     add_conv_rots(s3, C3);
-    add_conv_rots(s3, C4A);
-    print_set("stage3 (C3+C4A)", s3);
+    print_vec("stage3", s3);
 
-    // stage4：C4
+    // stage4：conv4_1a/conv4_s2(C4A) + conv4_*a/b(C4)
     std::set<int> s4;
+    add_conv_rots(s4, C4A);
     add_conv_rots(s4, C4);
-    print_set("stage4 (C4)", s4);
+    print_vec("stage4", s4);
 
-    // downsamp1：C3A 的下采样
+    // downsamp1：PP_CONV3A
     std::set<int> ds1;
     add_downsamp_rots(ds1, C3A);
-    print_set("downsamp1 (C3A)", ds1);
+    print_vec("downsamp1", ds1);
 
-    // downsamp2：C4A 的下采样
+    // downsamp2：PP_CONV4A
     std::set<int> ds2;
     add_downsamp_rots(ds2, C4A);
-    print_set("downsamp2 (C4A)", ds2);
+    print_vec("downsamp2", ds2);
 
-    // avgpool
+    // avgpool：PP_POOL
     std::set<int> ap;
     add_avgpool_rots(ap, PL);
-    print_set("avgpool", ap);
+    print_vec("avgpool", ap);
 
-    // head (FC)
+    // head：FC in_dim=64，对角线 d=1..63
     std::set<int> hd;
-    add_fc_rots(hd, PL.ci);  // ci=64
-    print_set("head (FC, in_dim=64)", hd);
+    for (int d = 1; d < 64; d++) hd.insert(d);
+    print_vec("head", hd);
 
     return 0;
 }
