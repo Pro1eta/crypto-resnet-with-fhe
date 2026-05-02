@@ -16,7 +16,7 @@ static const string MULT_FILE = "/mult-keys.bin";
 void FHEContext::generate(const string& keys_dir, bool serialize) {
     CCParams<CryptoContextCKKSRNS> p;
     p.SetSecretKeyDist(SPARSE_TERNARY);
-    p.SetSecurityLevel(HEStd_128_classic);
+    p.SetSecurityLevel(HEStd_NotSet);
     p.SetRingDim(1 << 16);
     p.SetBatchSize(1 << 14);  // RS packing 有效槽数 16384
     p.SetNumLargeDigits(3);
