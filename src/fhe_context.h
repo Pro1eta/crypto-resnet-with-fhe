@@ -21,7 +21,10 @@ public:
     Ctxt add(const Ctxt& a, const Ctxt& b) const;
     Ctxt mul(const Ctxt& c, const Ptxt& p) const;
     Ctxt bootstrap(const Ctxt& c) const;
-    void set_slots(Ctxt& c, int slots) const { c->SetSlots(slots); }
+    void set_slots(Ctxt& c, int slots) const {
+        c->SetSlots(slots);
+        cerr << "[SET_SLOTS] " << slots << "\n";
+    }
 
     Ptxt encode(const vector<double>& v, int level, int slots = 0) const;
     Ctxt  encrypt(const vector<double>& v, int level) const;
