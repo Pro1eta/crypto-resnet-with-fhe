@@ -42,9 +42,8 @@ Ctxt downsamp(const FHEContext& ctx, const Ctxt& in, const PackParams& pp) {
         }
     }
 
-    // Algorithm 5 第13行：最终对齐旋转
-    // 输出数据起始偏移 = ko²·ho·wo·to / 2（从中间位置移到起始位置）
-    int final_rot = -(ko*ko*pp.ho*pp.wo*to) / 2;
+    // Algorithm 5 第13行：最终对齐旋转，论文公式 -ko²·ho·wo·ti/8
+    int final_rot = -(ko*ko*pp.ho*pp.wo*ti) / 8;
     if (final_rot != 0)
         out = ctx.rot(out, final_rot);
 

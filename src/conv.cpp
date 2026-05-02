@@ -39,8 +39,8 @@ Ctxt mult_par_conv_bn(const FHEContext& ctx, const Ctxt& in,
         // SumSlots 三次（第16-18行）
         // 第一次：ki 方向（列内），gap=1
         cb = sum_slots(ctx, cb, ki, 1);
-        // 第二次：hi 方向（行间），gap=ki²·wi
-        cb = sum_slots(ctx, cb, ki, ki*ki*wi);
+        // 第二次：hi 方向（行间），gap=ki·wi
+        cb = sum_slots(ctx, cb, ki, ki*wi);
         // 第三次：ti 方向（通道组），gap=ki²·hi·wi
         cb = sum_slots(ctx, cb, ti, ki*ki*hi*wi);
 
